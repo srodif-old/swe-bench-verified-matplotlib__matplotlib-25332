@@ -597,6 +597,47 @@ def test_grouper_private():
         assert mapping[ref(o)] is base_set
 
 
+def test_grouper_pickle():
+    """Test that Grouper objects can be pickled and unpickled."""
+    class Dummy:
+        pass
+    
+    # Create test objects  
+    a, b, c, d = [Dummy() for _ in range(4)]
+    
+    # Create and populate grouper
+    g = cbook.Grouper()
+    g.join(a, b)
+    g.join(c, d)
+    
+    # Verify original grouper works
+    assert g.joined(a, b)
+    assert g.joined(c, d)
+    assert not g.joined(a, c)
+    
+    # Keep references to objects so they don't get garbage collected
+    objects = [a, b, c, d]
+    
+    # Test pickling (this should not raise an exception)
+    pickled_data = pickle.dumps(g)
+    
+    # Test unpickling
+    g2 = pickle.loads(pickled_data)
+    
+    # The unpickled grouper should have the right structure
+    # Note: the actual objects are different instances after pickle,
+    # but the grouper should still be functional for new operations
+    assert hasattr(g2, '_mapping')
+    
+    # Test that we can add new objects to the unpickled grouper
+    e = Dummy()
+    f = Dummy()
+    g2.join(e, f)
+    
+    # This should work without errors
+    list(g2)  # This calls clean() internally
+
+
 def test_flatiter():
     x = np.arange(5)
     it = x.flat

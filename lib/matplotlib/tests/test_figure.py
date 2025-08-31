@@ -1542,6 +1542,37 @@ def test_unpickle_with_device_pixel_ratio():
     assert fig2.dpi == 42
 
 
+def test_pickle_figure_with_aligned_labels():
+    """Test that a figure with aligned labels can be pickled and unpickled."""
+    fig = Figure()
+    ax1 = fig.add_subplot(2, 1, 1)
+    ax2 = fig.add_subplot(2, 1, 2)
+    
+    # Set some labels
+    ax1.set_ylabel('Label 1')
+    ax2.set_ylabel('Label 2')
+    
+    # This should work before align_labels
+    pickle.dumps(fig)
+    
+    # Call align_labels - this was causing the pickle issue
+    fig.align_labels()
+    
+    # This should work after the fix
+    pickled_data = pickle.dumps(fig)
+    
+    # Test unpickling as well
+    fig2 = pickle.loads(pickled_data)
+    
+    # Verify the unpickled figure has the correct structure
+    assert hasattr(fig2, '_align_label_groups')
+    assert 'x' in fig2._align_label_groups
+    assert 'y' in fig2._align_label_groups
+    
+    # Verify we still have the same number of axes
+    assert len(fig2.axes) == len(fig.axes)
+
+
 def test_gridspec_no_mutate_input():
     gs = {'left': .1}
     gs_orig = dict(gs)

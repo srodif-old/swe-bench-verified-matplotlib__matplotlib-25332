@@ -846,6 +846,30 @@ class Grouper:
         siblings = self._mapping.get(weakref.ref(a), [weakref.ref(a)])
         return [x() for x in siblings]
 
+    def __getstate__(self):
+        """
+        Prepare the Grouper for pickling by converting weakrefs to regular objects.
+        """
+        self.clean()  # Remove any dead references first
+        # Convert the weakref-based mapping to a regular object-based one
+        groups = list(self)  # This gives us lists of actual objects
+        return {'groups': groups}
+
+    def __setstate__(self, state):
+        """
+        Restore the Grouper from pickled state by recreating weakrefs.
+        """
+        # Rebuild the _mapping from the groups
+        self._mapping = {}
+        groups = state.get('groups', [])
+        for group in groups:
+            if group:  # Skip empty groups
+                # Filter out any None values (objects that were garbage collected)
+                valid_objects = [obj for obj in group if obj is not None]
+                if valid_objects:
+                    # Join all objects in this group
+                    self.join(*valid_objects)
+
 
 class GrouperView:
     """Immutable view over a `.Grouper`."""
